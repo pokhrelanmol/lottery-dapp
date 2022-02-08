@@ -1,0 +1,25 @@
+{
+    "name": "lottery.json",
+    "version": "0.0.0",
+    "scripts": {
+        "start": "vite",
+        "build": "tsc && vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "ethers": "^5.5.4",
+        "react": "^17.0.2",
+        "react-dom": "^17.0.2"
+    },
+    "devDependencies": {
+        "@types/react": "^17.0.33",
+        "@types/react-dom": "^17.0.10",
+        "@vitejs/plugin-react": "^1.0.7",
+        "autoprefixer": "^10.4.2",
+        "install": "^0.13.0",
+        "postcss": "^8.4.6",
+        "tailwindcss": "^3.0.19",
+        "typescript": "^4.4.4",
+        "vite": "^2.7.2"
+    }
+}
