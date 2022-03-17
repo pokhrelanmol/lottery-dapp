@@ -5,29 +5,25 @@ import "hardhat/console.sol";
 
 contract Lottery {
     event Deposit(address indexed depositor, uint256 amount);
-    event Winner(address indexed winner, bytes amount);
-    struct Winners {
-        uint256 amount;
-        bool claimed;
-    }
-    address public manager;
-    address public winner;
-    mapping(address => Winners) public winners;
+    event Winner(address indexed winner);
+    address[] private _participants;
+    mapping(address => uint256) public winners;
+    uint256 public nextLotteryPrice;
+    uint256 public lotteryPrice = 1 ether;
 
-    address[] public participants;
-
-    constructor() {
-        manager = msg.sender;
-    }
-
-    function deposit() external payable {
-        require(msg.value >= 1 ether, "Minimum transfer 1 Eth");
-        participants.push(msg.sender);
+    function join() external payable {
+        require(msg.value == 1 ether, "Minimum transfer 1 Eth");
+        _participants.push(msg.sender);
+        nextLotteryPrice += 1 ether;
         emit Deposit(msg.sender, msg.value);
     }
 
     function getContractBalance() public view returns (uint256) {
         return address(this).balance;
+    }
+
+    function participants() external view returns (address[] memory) {
+        return _participants;
     }
 
     function random() private view returns (uint256) {
@@ -37,28 +33,30 @@ contract Lottery {
                     abi.encodePacked(
                         block.difficulty,
                         block.timestamp,
-                        participants.length
+                        _participants.length
                     )
                 )
             );
     }
 
-    function participantCount() public view returns (uint256) {
-        return participants.length;
-    }
+    // function participantCount() internal view returns (uint256) {
+    //     return participants.length;
+    // }
 
     function selectWinner() public {
-        require(msg.sender == manager, "Only Manager");
-        require(participantCount() >= 3, "Min participants should be 3");
-        Winners memory winnerDetails = Winners(address(this).balance, false);
-        winners[participants[random() % participantCount()]] = winnerDetails;
-        delete participants;
-        (bool success, bytes memory data) = winner.call{
-            value: getContractBalance()
-        }("");
-        require(success, "Transfer failed");
-        emit Winner(winner, data);
+        require(_participants.length >= 3, "Min participants should be 3");
+        address winner = _participants[random() % _participants.length];
+        emit Winner(winner);
+        winners[winner] += nextLotteryPrice;
+        delete nextLotteryPrice;
+        delete _participants;
+    }
 
-        // TODO: emit fund transfered to winner
+    function claim() external {
+        uint256 claimableAmount = winners[msg.sender];
+        require(claimableAmount > 0, "We owe you nothing!");
+        winners[msg.sender] = 0;
+        (bool success, ) = msg.sender.call{value: claimableAmount}("");
+        require(success, "Ether transfer failed");
     }
 }

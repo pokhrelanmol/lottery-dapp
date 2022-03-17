@@ -1,76 +1,65 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable prettier/prettier */
+import React from "react";
 import { useState } from "react";
-import Greeter from "./artifacts/contracts/Greeter.sol/Greeter.json";
-import { ethers } from "ethers";
-const greeterContractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-const { ethereum } = window as any;
+import { useWallet } from "./context/WalletContext";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { getProvider } from "./provider";
+import { GreeterProvider } from "./context/GreeterContext";
+import Greeter from "./components/Greeter";
+import { joinClasses } from "./helpers";
+import NavBar from "./components/layout/NavBar";
+import Lottery from "./components/Lottery";
+import { LotteryProvider } from "./context/LotteryContext";
 function App() {
-    const [currentAccount, setCurrentAccount] = useState("");
-    const [greetingMessage, setGreetingMessage] = useState("");
-
-    const connectWallet = async () => {
-        try {
-            const account = await ethereum.request({
-                method: "eth_requestAccounts",
-            });
-            setCurrentAccount(account);
-        } catch (error) {
-            console.log(error);
-        }
-    };
-
-    const fetchGreeting = async () => {
-        try {
-            const provider = new ethers.providers.Web3Provider(ethereum);
-            const signer = provider.getSigner();
-            const greeterContract = new ethers.Contract(
-                greeterContractAddress,
-                Greeter.abi,
-                provider
-            );
-            const data = await greeterContract.greet();
-            console.log("data: " + data);
-        } catch (error) {
-            console.log(error);
-        }
-    };
-    const setGreeting = async () => {
-        // eslint-disable-next-line no-useless-return
-        if (!greetingMessage) return;
-        await connectWallet();
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const greeterContract = new ethers.Contract(
-            greeterContractAddress,
-            Greeter.abi,
-            signer
-        );
-        const transaction = await greeterContract.setGreeting(greetingMessage);
-        await transaction.wait();
-        fetchGreeting();
-    };
-    const commonClasses = ``;
+    const { setWalletAddress } = useWallet();
+    React.useEffect(() => {
+        (async function init() {
+            try {
+                const _provider = await getProvider();
+                if (setWalletAddress) {
+                    const signer = _provider.getSigner();
+                    setWalletAddress(await signer.getAddress());
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        })();
+    }, [setWalletAddress]);
     return (
-        <div className="flex justify-center items-center">
-            <input
-                className="border-b border-black outline-none"
-                onChange={(e) => setGreetingMessage(e.target.value)}
-                placeholder="Set greeting"
-            />
-            <button
-                className="px-6 py-2 rounded bg-slate-400 hover:bg-slate-500 text-slate-100"
-                onClick={fetchGreeting}
+        <Router>
+            <div
+                className={joinClasses(
+                    "grid",
+                    "grid-rows-3m",
+                    "min-h-screen",
+                    "max-w-4xl",
+                    "mx-auto",
+                    "text-center",
+                    "text-gray-600",
+                    "font-mono"
+                )}
             >
-                Fetch Greeting
-            </button>
-            <button
-                className="px-6 py-2 rounded bg-cyan-400 hover:bg-cyan-500 text-cyan-100"
-                onClick={setGreeting}
-            >
-                Set Greeting
-            </button>
-        </div>
+                <NavBar />
+
+                <div className="h-full text-center">
+                    <Routes>
+                        <Route
+                            path="/"
+                            element={
+                                <>
+                                    {/* <Greeter /> */}
+                                    <LotteryProvider>
+                                        <Lottery />
+                                    </LotteryProvider>
+                                </>
+                            }
+                        ></Route>
+                    </Routes>
+                </div>
+                {/* <Footer /> */}
+            </div>
+        </Router>
     );
 }
 
